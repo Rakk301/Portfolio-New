@@ -1,0 +1,219 @@
+---
+title: "Question5r"
+output: html_document
+---
+
+Importing Libraries:
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggcorrplot)
+library(fastDummies)
+library(caTools)
+library(randomForest)
+library(caret)
+library(rpart)
+library(xgboost)
+library(glmnet)
+library(dplyr)
+```
+
+
+Reading data
+
+```{r}
+
+flight_06 <- read_csv("/Users/rak/Desktop/2006.csv")
+flight_07 <- read_csv("/Users/rak/Desktop/2007.csv")
+airports <- read_csv("/Users/rak/Desktop/airports.csv")
+carriers <- read_csv("/Users/rak/Desktop/carriers.csv")
+plane_data <- read_csv("/Users/rak/Desktop/plane-data.csv")
+```
+
+Data Cleaning:
+```{r}
+cat(dim(flight_06), dim(flight_07))
+```
+
+```{r}
+# Checking for null values
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+
+```{r}
+# Rows with cancelled and diverted flights are dropped:
+flight_06 <- flight_06 %>% filter(Cancelled == 0, Diverted == 0)
+flight_07 <- flight_07 %>% filter(Cancelled == 0, Diverted == 0)
+```
+
+```{r}
+# Checking null values again:
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+
+Merging dataset:
+
+```{r}
+# Merging the Dataframes
+flight_data <- bind_rows(flight_06, flight_07)
+```
+
+Dropping redundant columns
+
+```{r}
+# Removing redundant columns:
+flight_data <- select(flight_data, -CancellationCode, -TaxiIn, -TaxiOut)
+colSums(is.na(flight_data))
+```
+
+Calculating TotalDelay and isDelay:
+
+```{r}
+# Calculating the total delay - arrival + departure delay
+flight_data$TotalDelay <- flight_data$ArrDelay + flight_data$DepDelay
+flight_data$TotalDelay <- as.numeric(flight_data$TotalDelay)
+# 'isDelay' to determine if flight is delayed or not
+flight_data$isDelay <- ifelse(flight_data$TotalDelay > 0, 1, 0)
+flight_data$isDelay <- as.numeric(flight_data$isDelay)
+```
+Creating a sample of the dataset :
+```{r}
+# Creating a sample of around 10% of the data:
+class_model <- flight_data %>% sample_n(150000, replace = FALSE)
+```
+
+```{r}
+# Creating DelayClasses to classify Delay into modetate and 
+delayclasses <- ifelse(class_model$TotalDelay > 15, 1, 0)
+
+class_model$DelayClasses <- delayclasses
+
+class_model
+
+# Creating a new dataset with totaldelay for regression models
+reg_model <- class_model %>% 
+  select(Month, DayOfWeek, DayofMonth, Origin, Dest, CRSElapsedTime, Distance,
+         CarrierDelay, WeatherDelay, NASDelay, SecurityDelay, LateAircraftDelay, TotalDelay)
+
+# Creating dataset for classification models with DelayClasses
+class_model2 <- class_model %>% 
+  select(Month, DayOfWeek, DayofMonth, Origin, Dest, CRSElapsedTime, Distance,
+         CarrierDelay, WeatherDelay, NASDelay, SecurityDelay, LateAircraftDelay, DelayClasses)
+```
+
+# Classification Models:
+
+Creating Dummy Variables for Origin and Destination:
+```{r}
+# converting `origin` and `destination` to factors
+class_model2$Origin <- as.factor(class_model2$Origin)
+class_model2$Dest <- as.factor(class_model2$Dest)
+
+# create dummy variables for origin and destination
+dummies <- dummy_cols(class_model2,select_columns = c("Origin", "Dest"),remove_first_dummy = TRUE)
+
+# dropping original destination and origin columns
+dummy_data2 = select(dummies, -c("Origin", "Dest"))
+dummy_data2 
+```
+
+Train Test Split:
+```{r}
+# Train Test Split
+split1<- sample(c(rep(0, 0.7 * nrow(dummy_data2)), rep(1, 0.3 * nrow(dummy_data2))))
+table(split1)                                 
+train_data2 <- dummy_data2[split1 == 0, ]  
+test_data2 <- dummy_data2[split1 == 1, ]
+
+train_data2
+test_data2
+```
+
+Model 1: Decision Tree Classifier:
+```{r}
+dtc <- rpart(DelayClasses ~ ., data = train_data2, method = 'class')
+# Predicting on the test set
+y_pred_dtc <- predict(dtc, newdata = test_data2, type = "class")
+# Calculate scores 
+conf_mat_dtc <- confusionMatrix(data = y_pred_dtc, reference = factor(test_data2$DelayClasses))
+accuracy_dtc <- conf_mat_dtc$overall["Accuracy"]
+precision_dtc <- conf_mat_dtc$byClass["Pos Pred Value"]
+recall_dtc <- conf_mat_dtc$byClass["Sensitivity"]
+f1_score_dtc <- 2 * (precision_dtc * recall_dtc) / (precision_dtc + recall_dtc)
+
+# Print the results
+print(paste0("Accuracy: ", round(accuracy_dtc, 2)))
+print(paste0("Precision: ", round(precision_dtc, 2)))
+print(paste0("Recall: ", round(recall_dtc, 2)))
+print(paste0("F1 score: ", round(f1_score_dtc, 2)))
+```
+
+Model 2: Random Forest Classifier:
+```{r}
+# Fitting the model:
+rfc = randomForest(factor(DelayClasses) ~ ., data = train_data2, ntree = 25, mtry = 6)
+# Predicting on the test set
+y_pred_rfc <- predict(rfc, newdata = test_data2, type = "class")
+
+# Calculate scores
+conf_mat_rfc <- confusionMatrix(data = y_pred_rfc, reference = factor(test_data2$DelayClasses))
+accuracy_rfc <- conf_mat_rfc$overall["Accuracy"]
+precision_rfc <- conf_mat_rfc$byClass["Pos Pred Value"]
+recall_rfc <- conf_mat_rfc$byClass["Sensitivity"]
+f1_score_rfc <- conf_mat_rfc$byClass["F1"]
+
+# Print the results
+print(paste0("Accuracy: ", round(accuracy_rfc, 2)))
+print(paste0("Precision: ", round(precision_rfc, 2)))
+print(paste0("Recall: ", round(recall_rfc, 2)))
+print(paste0("F1 score: ", round(f1_score_rfc, 2)))
+```
+
+Model 3: Gradient Booosting:
+```{r}
+# Convert data frames to matrices for xgboost:
+train_matrix <- as.matrix(train_data2)
+test_matrix <- as.matrix(test_data2)
+#Fitting the model:
+xgb_model <- xgboost(data = train_matrix, label = train_data2$DelayClasses, objective = "binary:logistic", nrounds = 1000)
+
+# Predicting on the test set
+y_pred_xgb <- predict(xgb_model, test_matrix)
+
+# Threshold:
+y_pred_xgb <- ifelse(y_pred_xgb > 0.5, 1, 0)
+# Calculating scores
+conf_mat_xgb <- confusionMatrix(data = factor(y_pred_xgb), reference = factor(test_data2$DelayClasses))
+accuracy_xgb <- conf_mat_xgb$overall["Accuracy"]
+precision_xgb <- conf_mat_xgb$byClass["Pos Pred Value"]
+recall_xgb <- conf_mat_xgb$byClass["Sensitivity"]
+f1_score_xgb <- 2 * (precision_xgb * recall_xgb) / (precision_xgb + recall_xgb)
+
+# Print the results
+print(paste0("Accuracy: ", round(accuracy_xgb, 2)))
+print(paste0("Precision: ", round(precision_xgb, 2)))
+print(paste0("Recall: ", round(recall_xgb, 2)))
+print(paste0("F1 score: ", round(f1_score_xgb, 2)))
+```
+
+Scores:
+```{r}
+# create data frame
+class_scores_df <- data.frame(Model=c("Random Forest Classifier", "Gradient Boosting", "Decision Tree Classifier"),
+                        Accuracy=c(accuracy_rfc, accuracy_xgb, accuracy_dtc),
+                        Precision=c(precision_rfc, precision_xgb, precision_dtc),
+                        Recall=c(recall_rfc, recall_xgb, recall_dtc),
+                        F1=c(f1_score_rfc, f1_score_xgb, f1_score_dtc))
+
+# display data frame
+class_scores_df
+```
+
+
+
+
+
+

@@ -1,0 +1,11 @@
+Query ,Intent,Mapped_Tables
+"Show me all orders placed by customer ""Alfreds Futterkiste"" in September 2023.",RETRIEVE_ORDERS_BY_CUSTOMER_AND_DATE,Orders | Customers
+Show me the top 10 customers in terms of total purchase amount.,IDENTIFY_TOP_CUSTOMERS_BY_SALES,Orders | Order Details | Customers
+Show me the total sales figures per month for this year.,CALCULATE_TOTAL_SALES_PER_MONTH,Orders | Order Details
+Which month had the greatest number of orders shipped?,FIND_PEAK_SHIPMENT_PERIODS,Orders
+Provide a count of products grouped by their category.,GROUP_AND_COUNT_PRODUCTS_BY_CATEGORY,Products | Categories
+List all items that have zero units in stock.,IDENTIFY_OUT_OF_STOCK_PRODUCTS,Products
+Show me all employees located in London.,LIST_EMPLOYEES_BY_REGION,Employees | EmployeeTerritories | Territories | Region
+List all suppliers along with their contact names and phone numbers.,GET_SUPPLIER_INFORMATION,Suppliers
+Find products marked as discontinued.,FIND_DISCONTINUED_PRODUCTS,Products
+List products where units in stock are less than the reorder level.,FIND_PRODUCTS_WITH_LOW_STOCK,Products

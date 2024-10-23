@@ -1,0 +1,116 @@
+Table and Field Descriptions:
+
+1. **Products Table**
+   Purpose: Stores information about the products that Northwind sells.
+   Columns:
+   - ProductID: A unique identifier for each product. This acts as the primary key.
+   - ProductName: The name of the product.
+   - SupplierID: A foreign key linking the product to its supplier from the Suppliers table.
+   - CategoryID: A foreign key linking the product to a category in the Categories table.
+   - QuantityPerUnit: Describes how the product is packaged (e.g., "24 cans per box").
+   - UnitPrice: The price per unit for the product.
+   - UnitsInStock: The current stock level for the product.
+   - UnitsOnOrder: Quantity of the product that has been ordered but not yet received.
+   - ReorderLevel: The stock level at which more product should be reordered.
+   - Discontinued: A Boolean value indicating whether the product is still available for sale.
+
+2. **Suppliers Table**
+   Purpose: Contains details about the suppliers who provide the products sold by Northwind.
+   Columns:
+   - SupplierID: A unique identifier for each supplier. This acts as the primary key.
+   - CompanyName: The name of the supplier company.
+   - ContactName: The name of the contact person at the supplier.
+   - ContactTitle: The job title of the contact person.
+   - Address, City, Region, PostalCode, Country: Details about the supplier’s location.
+   - Phone, Fax: Contact numbers for the supplier.
+   - HomePage: The website URL for the supplier.
+
+3. **Categories Table**
+   Purpose: Categorizes products into different types, allowing for better organization and querying.
+   Columns:
+   - CategoryID: A unique identifier for each category. This acts as the primary key.
+   - CategoryName: The name of the category (e.g., "Beverages").
+   - Description: A textual description of the category.
+   - Picture: An image representing the category (optional).
+
+4. **Orders Table**
+   Purpose: Records customer orders placed with Northwind.
+   Columns:
+   - OrderID: A unique identifier for each order. This acts as the primary key.
+   - CustomerID: A foreign key linking the order to the Customers table.
+   - EmployeeID: A foreign key linking the order to the employee who handled the order.
+   - OrderDate: The date when the order was placed.
+   - RequiredDate: The date by which the customer needs the order delivered.
+   - ShippedDate: The date when the order was shipped to the customer.
+   - ShipVia: A foreign key linking to the shipping service (from the Shippers table).
+   - Freight: The shipping cost for the order.
+   - ShipName, ShipAddress, ShipCity, ShipRegion, ShipPostalCode, ShipCountry: Details of the destination for the order.
+
+5. **Order Details Table**
+   Purpose: Contains specific details about the products within each order.
+   Columns:
+   - OrderID: A foreign key linking to the Orders table.
+   - ProductID: A foreign key linking to the Products table.
+   - UnitPrice: The price per unit at the time of the order.
+   - Quantity: The number of units of the product ordered.
+   - Discount: The discount applied to the product in the order.
+
+6. **Employees Table**
+   Purpose: Stores details about the employees working at Northwind.
+   Columns:
+   - EmployeeID: A unique identifier for each employee. This acts as the primary key.
+   - LastName, FirstName: Employee's name.
+   - Title, TitleOfCourtesy: Job title and courtesy title (e.g., Mr., Mrs.).
+   - BirthDate, HireDate: Dates of birth and hire.
+   - Address, City, Region, PostalCode, Country: Location details of the employee.
+   - HomePhone, Extension: Contact details.
+   - Notes: Additional notes about the employee.
+   - ReportsTo: The EmployeeID of the person to whom this employee reports.
+   - Photo, PhotoPath: Image of the employee and its file path.
+
+7. **Customers Table**
+   Purpose: Contains information about the customers who place orders.
+   Columns:
+   - CustomerID: A unique identifier for each customer. This acts as the primary key.
+   - CompanyName: The name of the customer’s company.
+   - ContactName, ContactTitle: The name and title of the contact person.
+   - Address, City, Region, PostalCode, Country: Location details of the customer.
+   - Phone, Fax: Contact details.
+
+8. **Shippers Table**
+   Purpose: Stores details about the shipping companies used by Northwind.
+   Columns:
+   - ShipperID: A unique identifier for each shipper. This acts as the primary key.
+   - CompanyName: The name of the shipping company.
+   - Phone: Contact number of the shipper.
+
+9. **EmployeeTerritories Table**
+   Purpose: Links employees to the territories they manage.
+   Columns:
+   - EmployeeID: A foreign key linking to the Employees table.
+   - TerritoryID: A foreign key linking to the Territories table.
+
+10. **Territories Table**
+    Purpose: Contains information about the geographical areas covered by Northwind employees.
+    Columns:
+    - TerritoryID: A unique identifier for each territory. This acts as the primary key.
+    - TerritoryDescription: A description of the territory.
+    - RegionID: A foreign key linking to the Region table.
+
+11. **Region Table**
+    Purpose: Categorizes territories into larger regions.
+    Columns:
+    - RegionID: A unique identifier for each region. This acts as the primary key.
+    - RegionDescription: A description of the region.
+
+12. **CustomerDemographics Table**
+    Purpose: Stores demographic information about customers.
+    Columns:
+    - CustomerTypeID: A unique identifier for each customer demographic. This acts as the primary key.
+    - CustomerDesc: A description of the customer demographic.
+
+13. **CustomerCustomerDemo Table**
+    Purpose: Links customers to their demographic information.
+    Columns:
+    - CustomerID: A foreign key linking to the Customers table.
+    - CustomerTypeID: A foreign key linking to the CustomerDemographics table.

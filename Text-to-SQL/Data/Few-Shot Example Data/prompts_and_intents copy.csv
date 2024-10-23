@@ -1,0 +1,51 @@
+Prompt,Intent
+"Show me all orders placed by customer ""Alfreds Futterkiste"" in September 2023.",RETRIEVE_ORDERS_BY_CUSTOMER_AND_DATE
+"I need the list of orders from ""Around the Horn"" during the month of August.",RETRIEVE_ORDERS_BY_CUSTOMER_AND_DATE
+"Can you retrieve orders made by ""Berglunds snabbköp"" after July 1st, 2023?",RETRIEVE_ORDERS_BY_CUSTOMER_AND_DATE
+"Fetch all orders for ""Blauer See Delikatessen"" between June and August 2023.",RETRIEVE_ORDERS_BY_CUSTOMER_AND_DATE
+"Give me the orders from ""Bon app'"" in the last quarter.",RETRIEVE_ORDERS_BY_CUSTOMER_AND_DATE
+Who are our top 5 customers by total sales?,IDENTIFY_TOP_CUSTOMERS_BY_SALES
+List the customers with the highest order values this year.,IDENTIFY_TOP_CUSTOMERS_BY_SALES
+Which customers have spent the most with us in 2023?,IDENTIFY_TOP_CUSTOMERS_BY_SALES
+Show me the top 10 customers in terms of total purchase amount.,IDENTIFY_TOP_CUSTOMERS_BY_SALES
+Find out which customers generated the most revenue for us.,IDENTIFY_TOP_CUSTOMERS_BY_SALES
+What's the total sales amount for each month in 2023?,CALCULATE_TOTAL_SALES_PER_MONTH
+Provide a monthly breakdown of total sales for the current year.,CALCULATE_TOTAL_SALES_PER_MONTH
+How much did we sell in each month of 2023?,CALCULATE_TOTAL_SALES_PER_MONTH
+Show me the total sales figures per month for this year.,CALCULATE_TOTAL_SALES_PER_MONTH
+I'd like to see our monthly sales totals for 2023.,CALCULATE_TOTAL_SALES_PER_MONTH
+In which month did we ship the most orders in 2023?,FIND_PEAK_SHIPMENT_PERIODS
+When was our busiest shipping period this year?,FIND_PEAK_SHIPMENT_PERIODS
+Identify the months with the highest number of shipments.,FIND_PEAK_SHIPMENT_PERIODS
+Which month had the greatest number of orders shipped?,FIND_PEAK_SHIPMENT_PERIODS
+Find out during which period we shipped the most products.,FIND_PEAK_SHIPMENT_PERIODS
+How many products do we have in each category?,GROUP_AND_COUNT_PRODUCTS_BY_CATEGORY
+Provide a count of products grouped by their category.,GROUP_AND_COUNT_PRODUCTS_BY_CATEGORY
+List the number of products in each product category.,GROUP_AND_COUNT_PRODUCTS_BY_CATEGORY
+Can you show me how many items are in each category?,GROUP_AND_COUNT_PRODUCTS_BY_CATEGORY
+Give me a breakdown of product counts per category.,GROUP_AND_COUNT_PRODUCTS_BY_CATEGORY
+Which products are currently out of stock?,IDENTIFY_OUT_OF_STOCK_PRODUCTS
+List all items that have zero units in stock.,IDENTIFY_OUT_OF_STOCK_PRODUCTS
+Show me the products that are not available right now.,IDENTIFY_OUT_OF_STOCK_PRODUCTS
+Find the products that are out of inventory.,IDENTIFY_OUT_OF_STOCK_PRODUCTS
+What products are we currently sold out of?,IDENTIFY_OUT_OF_STOCK_PRODUCTS
+Who are the employees working in the Seattle region?,LIST_EMPLOYEES_BY_REGION
+Show me all employees located in London.,LIST_EMPLOYEES_BY_REGION
+Provide a list of employees by their region.,LIST_EMPLOYEES_BY_REGION
+Which employees are assigned to the Eastern region?,LIST_EMPLOYEES_BY_REGION
+List employees along with the regions they cover.,LIST_EMPLOYEES_BY_REGION
+"Give me contact details for the supplier ""Exotic Liquids"".",GET_SUPPLIER_INFORMATION
+"I need the address of ""Tokyo Traders"".",GET_SUPPLIER_INFORMATION
+Show me the suppliers based in the USA.,GET_SUPPLIER_INFORMATION
+List all suppliers along with their contact names and phone numbers.,GET_SUPPLIER_INFORMATION
+"Who supplies ""Aniseed Syrup"" and how can we contact them?",GET_SUPPLIER_INFORMATION
+Which products have been discontinued?,FIND_DISCONTINUED_PRODUCTS
+Show me all items that are no longer available for sale.,FIND_DISCONTINUED_PRODUCTS
+List the discontinued products from our inventory.,FIND_DISCONTINUED_PRODUCTS
+Find products marked as discontinued.,FIND_DISCONTINUED_PRODUCTS
+What products have we stopped selling?,FIND_DISCONTINUED_PRODUCTS
+Which products have stock levels below their reorder point?,FIND_PRODUCTS_WITH_LOW_STOCK
+Show me items that need to be reordered.,FIND_PRODUCTS_WITH_LOW_STOCK
+List products where units in stock are less than the reorder level.,FIND_PRODUCTS_WITH_LOW_STOCK
+Identify products with low inventory levels.,FIND_PRODUCTS_WITH_LOW_STOCK
+What products are running low in stock?,FIND_PRODUCTS_WITH_LOW_STOCK

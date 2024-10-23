@@ -1,0 +1,199 @@
+---
+title: "Question5r_part2"
+output: html_document
+---
+
+Importing Libraries:
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggcorrplot)
+library(fastDummies)
+library(caTools)
+library(randomForest)
+library(caret)
+library(rpart)
+library(xgboost)
+library(glmnet)
+library(dplyr)
+```
+
+
+Reading data
+
+```{r}
+
+flight_06 <- read_csv("/Users/rak/Desktop/2006.csv")
+flight_07 <- read_csv("/Users/rak/Desktop/2007.csv")
+airports <- read_csv("/Users/rak/Desktop/airports.csv")
+carriers <- read_csv("/Users/rak/Desktop/carriers.csv")
+plane_data <- read_csv("/Users/rak/Desktop/plane-data.csv")
+```
+
+Data Cleaning:
+```{r}
+cat(dim(flight_06), dim(flight_07))
+```
+
+```{r}
+# Checking for null values
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+
+```{r}
+# Rows with cancelled and diverted flights are dropped:
+flight_06 <- flight_06 %>% filter(Cancelled == 0, Diverted == 0)
+flight_07 <- flight_07 %>% filter(Cancelled == 0, Diverted == 0)
+```
+
+```{r}
+# Checking null values again:
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+
+Merging dataset:
+
+```{r}
+# Merging the Dataframes
+flight_data <- bind_rows(flight_06, flight_07)
+```
+
+Dropping redundant columns
+
+```{r}
+# Removing redundant columns:
+flight_data <- select(flight_data, -CancellationCode, -TaxiIn, -TaxiOut)
+colSums(is.na(flight_data))
+```
+
+Calculating TotalDelay and isDelay:
+
+```{r}
+# Calculating the total delay - arrival + departure delay
+flight_data$TotalDelay <- flight_data$ArrDelay + flight_data$DepDelay
+flight_data$TotalDelay <- as.numeric(flight_data$TotalDelay)
+# 'isDelay' to determine if flight is delayed or not
+flight_data$isDelay <- ifelse(flight_data$TotalDelay > 0, 1, 0)
+flight_data$isDelay <- as.numeric(flight_data$isDelay)
+```
+Creating a sample of the dataset :
+```{r}
+# Creating a sample of around 10% of the data:
+class_model <- flight_data %>% sample_n(150000, replace = FALSE)
+```
+
+```{r}
+delayclasses <- ifelse(class_model$TotalDelay > 15, 1, 0)
+
+class_model$DelayClasses <- delayclasses
+
+class_model
+library(dplyr)
+# Creating a new dataset with totaldelay for regression models
+reg_model <- class_model %>% 
+  select(Month, DayOfWeek, DayofMonth, Origin, Dest, CRSElapsedTime, Distance,
+         CarrierDelay, WeatherDelay, NASDelay, SecurityDelay, LateAircraftDelay, TotalDelay)
+
+# Creating dataset for classification models with DelayClasses
+class_model2 <- class_model %>% 
+  select(Month, DayOfWeek, DayofMonth, Origin, Dest, CRSElapsedTime, Distance,
+         CarrierDelay, WeatherDelay, NASDelay, SecurityDelay, LateAircraftDelay, DelayClasses)
+```
+
+Regression Models:
+
+Creating dummy variables for Origin and Destination:
+```{r}
+# converting `origin` and `destination` to factors
+reg_model$Origin <- as.factor(reg_model$Origin)
+reg_model$Dest <- as.factor(reg_model$Dest)
+# create dummy variables for origin and destination
+dummies <- dummy_cols(reg_model,select_columns = c("Origin", "Dest"),remove_first_dummy = TRUE)
+
+# dropping original destination and origin columns
+dummy_data = select(dummies, -c("Origin", "Dest"))
+dummy_data 
+```
+
+Train Test Split:
+```{r}
+# Train Test Split
+split1<- sample(c(rep(0, 0.7 * nrow(dummy_data)), rep(1, 0.3 * nrow(dummy_data))))
+table(split1)                                 
+train_data <- dummy_data[split1 == 0, ]  
+test_data <- dummy_data[split1 == 1, ]
+
+train_data
+test_data
+```
+
+Model 1: Lasso Regression:
+```{r}
+# Fit the lasso regression model
+lasso_model <- train(TotalDelay ~ ., data = train_data, method = "glmnet",
+                     trControl = trainControl(method = "cv"),
+                     tuneGrid = expand.grid(alpha = 1, lambda = seq(0.0001, 0.01, length = 100)))
+
+# Make predictions on the test data
+y_pred_lasso <- predict(lasso_model, newdata = test_data)
+
+# Calculate the RMSE
+rmse_lasso <- RMSE(y_pred_lasso, test_data$TotalDelay)
+
+# Calculate the R-squared
+r2_lasso <- cor(y_pred_lasso, test_data$TotalDelay) ^ 2
+
+# Print the results
+print(paste0("RMSE: ", rmse_lasso))
+print(paste0("R-squared: ", r2_lasso))
+```
+
+Model 2: Random Forest Regressor:
+```{r}
+# Fiting the model
+rf_model <- randomForest(TotalDelay ~ ., data = train_data, ntree = 25, mtry = 6)
+
+# Making predictions on the test data
+y_pred_rfr <- predict(rf_model, newdata = test_data)
+rmse_rfr <- RMSE(y_pred_rfr, test_data$TotalDelay)
+r2_rfr <- cor(y_pred_rfr, test_data$TotalDelay) ^ 2
+
+# Print the results
+print(paste0("RMSE: ", rmse_rfr))
+print(paste0("R-squared: ", r2_rfr))
+```
+
+Model 3: Gradient Boosting:
+```{r}
+xgb_model <- xgboost(data = as.matrix(train_data[, -1]), 
+                     label = train_data$TotalDelay,
+                     nrounds = 1000,
+                     objective = "reg:linear")
+# Making predictions
+y_pred_xgbr <- predict(xgb_model, as.matrix(test_data[, -1]))
+
+rmse_xgbr <- RMSE(y_pred_xgbr, test_data$TotalDelay)
+r2_xgbr <- cor(y_pred_xgbr, test_data$TotalDelay)^2
+
+# Print results
+print(paste0("RMSE: ", rmse_xgbr))
+print(paste0("R-squared: ", r2_xgbr))
+```
+
+Scores:
+```{r}
+# create a data frame with RMSE and R-squared values of 3 models
+rmse <- c(rmse_lasso, rmse_rfr, rmse_xgbr)
+r_squared <- c(r2_lasso, r2_rfr, r2_xgbr)
+model_names <- c("Lasso Regression", "Random Forest Regressor", "Gradient Boosting")
+model_df <- data.frame(Model = model_names, RMSE = rmse, `R-squared` = r_squared)
+
+# display the data frame
+model_df
+```
+
+
+

@@ -1,0 +1,116 @@
+Northwind Traders Database Schema:
+
+1. Products
+ProductID: int, Primary Key, Not Null
+ProductName: nvarchar(40), Not Null
+SupplierID: int, Foreign Key (Suppliers.SupplierID), Nullable
+CategoryID: int, Foreign Key (Categories.CategoryID), Nullable
+QuantityPerUnit: nvarchar(20), Nullable (Packaging details)
+UnitPrice: money, Nullable (Price per unit)
+UnitsInStock: smallint, Nullable (Current stock level)
+UnitsOnOrder: smallint, Nullable (Units currently on order)
+ReorderLevel: smallint, Nullable (Threshold for reorder)
+Discontinued: bit, Not Null (Whether the product is discontinued)
+
+
+2. Suppliers
+SupplierID: int, Primary Key, Not Null
+CompanyName: nvarchar(40), Not Null (Supplier’s company name)
+ContactName: nvarchar(30), Nullable (Supplier’s contact person)
+ContactTitle: nvarchar(30), Nullable (Title of the contact person)
+Address: nvarchar(60), Nullable (Street address)
+City: nvarchar(15), Nullable (City of the supplier)
+Region: nvarchar(15), Nullable (Region of the supplier)
+PostalCode: nvarchar(10), Nullable
+Country: nvarchar(15), Nullable (Supplier’s country)
+Phone: nvarchar(24), Nullable
+Fax: nvarchar(24), Nullable
+HomePage: ntext, Nullable (Supplier’s website)
+
+3. Categories
+CategoryID: int, Primary Key, Not Null
+CategoryName: nvarchar(15), Not Null (Product category name)
+Description: ntext, Nullable (Category description)
+Picture: image, Nullable (Category image)
+
+4. Orders
+OrderID: int, Primary Key, Not Null
+CustomerID: nchar(5), Foreign Key (Customers.CustomerID), Not Null
+EmployeeID: int, Foreign Key (Employees.EmployeeID), Nullable (Sales representative handling the order)
+OrderDate: datetime, Nullable (Date the order was placed)
+RequiredDate: datetime, Nullable (Date by which the customer requires the order)
+ShippedDate: datetime, Nullable (Date the order was shipped)
+ShipVia: int, Foreign Key (Shippers.ShipperID), Nullable (Shipping method)
+Freight: money, Nullable (Freight cost)
+ShipName: nvarchar(40), Nullable (Shipping recipient name)
+ShipAddress: nvarchar(60), Nullable
+ShipCity: nvarchar(15), Nullable
+ShipRegion: nvarchar(15), Nullable
+ShipPostalCode: nvarchar(10), Nullable
+ShipCountry: nvarchar(15), Nullable
+
+5. OrderDetails
+OrderID: int, Foreign Key (Orders.OrderID), Primary Key, Not Null
+ProductID: int, Foreign Key (Products.ProductID), Primary Key, Not Null
+UnitPrice: money, Not Null (Price at the time of order)
+Quantity: smallint, Not Null (Number of units ordered)
+Discount: real, Not Null (Discount applied to the order)
+
+6. Employees
+EmployeeID: int, Primary Key, Not Null
+LastName: nvarchar(20), Not Null
+FirstName: nvarchar(10), Not Null
+Title: nvarchar(30), Nullable (Job title)
+TitleOfCourtesy: nvarchar(25), Nullable (e.g., Mr., Mrs., Dr.)
+BirthDate: datetime, Nullable
+HireDate: datetime, Nullable
+Address: nvarchar(60), Nullable
+City: nvarchar(15), Nullable
+Region: nvarchar(15), Nullable
+PostalCode: nvarchar(10), Nullable
+Country: nvarchar(15), Nullable
+HomePhone: nvarchar(24), Nullable
+Extension: nvarchar(4), Nullable
+Photo: image, Nullable
+Notes: ntext, Nullable (Additional employee information)
+ReportsTo: int, Nullable (Manager’s EmployeeID)
+PhotoPath: nvarchar(255), Nullable (Link to employee photo)
+
+7. Customers
+CustomerID: nchar(5), Primary Key, Not Null
+CompanyName: nvarchar(40), Not Null (Customer’s company name)
+ContactName: nvarchar(30), Nullable (Customer’s contact person)
+ContactTitle: nvarchar(30), Nullable (Title of the contact person)
+Address: nvarchar(60), Nullable
+City: nvarchar(15), Nullable
+Region: nvarchar(15), Nullable
+PostalCode: nvarchar(10), Nullable
+Country: nvarchar(15), Nullable
+Phone: nvarchar(24), Nullable
+Fax: nvarchar(24), Nullable
+
+8. Shippers
+ShipperID: int, Primary Key, Not Null
+CompanyName: nvarchar(40), Not Null (Shipping company name)
+Phone: nvarchar(24), Nullable
+
+9. EmployeeTerritories
+EmployeeID: int, Foreign Key (Employees.EmployeeID), Primary Key, Not Null
+TerritoryID: nvarchar(20), Foreign Key (Territories.TerritoryID), Primary Key, Not Null
+
+10. Territories
+TerritoryID: nvarchar(20), Primary Key, Not Null
+TerritoryDescription: nvarchar(50), Not Null
+RegionID: int, Foreign Key (Region.RegionID), Not Null
+
+11. Region
+RegionID: int, Primary Key, Not Null
+RegionDescription: nchar(50), Not Null
+
+12. CustomerDemographics
+CustomerTypeID: nchar(10), Primary Key, Not Null
+CustomerDesc: ntext, Nullable
+
+13. CustomerCustomerDemo
+CustomerID: nchar(5), Foreign Key (Customers.CustomerID), Primary Key, Not Null
+CustomerTypeID: nchar(10), Foreign Key (CustomerDemographics.CustomerTypeID), Primary Key, Not Null

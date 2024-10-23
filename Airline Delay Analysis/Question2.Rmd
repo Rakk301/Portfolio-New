@@ -1,0 +1,208 @@
+---
+title: "Question 2"
+output: html_document
+
+---
+
+Importing Libraries:
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+
+reading data:
+
+```{r}
+
+flight_06 <- read_csv("/Users/rak/Desktop/2006.csv")
+flight_07 <- read_csv("/Users/rak/Desktop/2007.csv")
+airports <- read_csv("/Users/rak/Desktop/airports.csv")
+carriers <- read_csv("/Users/rak/Desktop/carriers.csv")
+plane_data <- read_csv("/Users/rak/Desktop/plane-data.csv")
+```
+
+# Data Cleaning:
+```{r}
+cat(dim(flight_06), dim(flight_07))
+```
+
+```{r}
+# Checking for null values
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+
+```{r}
+# Rows with cancelled and diverted flights are dropped:
+flight_06 <- flight_06 %>% filter(Cancelled == 0, Diverted == 0)
+flight_07 <- flight_07 %>% filter(Cancelled == 0, Diverted == 0)
+```
+
+```{r}
+# Checking null values again:
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+
+Merging dataset
+```{r}
+# Merging the Dataframes
+flight_data <- bind_rows(flight_06, flight_07)
+```
+
+Dropping redundant columns
+```{r}
+# Removing redundant columns:
+flight_data <- select(flight_data, -CancellationCode, -TaxiIn, -TaxiOut)
+colSums(is.na(flight_data))
+```
+
+Calculating 'TotalDelay' and 'isDelay':
+```{r}
+# Calculating the total delay - arrival + departure delay
+flight_data$TotalDelay <- flight_data$ArrDelay + flight_data$DepDelay
+flight_data$TotalDelay <- as.numeric(flight_data$TotalDelay)
+# 'isDelay' to determine if flight is delayed or not
+flight_data$isDelay <- ifelse(flight_data$TotalDelay > 0, 1, 0)
+flight_data$isDelay <- as.numeric(flight_data$isDelay)
+```
+
+#Question 2:
+
+```{r}
+# Checking for null values in plane data
+colSums(is.na(plane_data))
+```
+
+
+```{r}
+
+# Dropping rows with null values
+plane_data <- plane_data %>% drop_na()
+```
+
+```{r}
+# Checking again for null values
+colSums(is.na(plane_data))
+```
+
+```{r}
+# renaming 'Year' in flight_data to 'FlightYear'
+flight_data <- flight_data %>% rename(FlightYear = Year)
+
+# renaming 'tailnum' in plane_data to 'TailNum' 
+plane_data <- plane_data %>% rename(TailNum = tailnum)
+
+# merging two datasets on common column 'TailNum'
+merged_data <- left_join(flight_data, plane_data, by = 'TailNum')
+```
+
+```{r}
+dim(merged_data)
+```
+
+```{r}
+colSums(is.na(merged_data))
+```
+
+```{r}
+#Filtering rows that have null values and then checking
+merged_data <- merged_data %>% filter(is.na(type) == FALSE)
+colSums(is.na(merged_data))
+```
+
+```{r}
+#Creating new Dataframe with only relevant columns
+plane_age_data <- merged_data %>% 
+  select(FlightYear, year, ArrDelay, DepDelay, TailNum)
+```
+
+```{r}
+#Creating Total delay and isDelay columns
+
+plane_age_data <- plane_age_data %>% 
+  mutate(TotalDelay = ArrDelay + DepDelay,
+         isDelay = ifelse(TotalDelay > 0, 1, 0))
+```
+
+```{r}
+#Further cleaning
+
+plane_age_data <- plane_age_data %>% 
+  mutate(year = as.integer(year)) %>% 
+  drop_na(year)
+```
+```{r}
+
+```
+
+
+```{r}
+#Calculating plane_age:
+plane_age_data$Plane_age <- plane_age_data$FlightYear - plane_age_data$year
+```
+
+```{r}
+colSums(is.na(plane_age_data))
+```
+```{r}
+# Correcting values on plane_age
+
+plane_age_data <- plane_age_data %>%
+  filter(Plane_age <= 100)
+```
+
+# Scatterplot of Total Delay vs Plane Age:
+```{r}
+plot(plane_age_data$Plane_age, plane_age_data$TotalDelay, 
+     xlab = "Plane Age", ylab = "Total Delay (minutes)", 
+     main = "Total Delay vs. Plane Age", 
+     pch = 16, col = "blue")
+```
+
+
+# Plotting Average Delay vs Plane Age:
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# grouping by age and calculating mean delay
+yearly_data <- plane_age_data %>% 
+  group_by(Plane_age) %>% 
+  summarize(mean_delay = mean(TotalDelay))
+
+ggplot(yearly_data, aes(x = Plane_age, y = mean_delay)) + 
+  geom_point() +
+  xlab("Age") +
+  ylab("Mean Delay Time (minutes)") +
+  ggtitle("Mean Delay Time by Age of Plane")
+```
+
+# Calculating Correlation between plane age and Delay Times:
+```{r}
+correlation_coefficient <- round(cor(plane_age_data$Plane_age, plane_age_data$TotalDelay), 4)
+cat(paste0("The correlation coefficient between the age of a plane and Total Delay is: ", correlation_coefficient))
+
+```
+
+Plotting Percentage of Delay Times For Age Groups:
+```{r}
+# Making groups
+plane_age_data$age_group <- cut(plane_age_data$Plane_age, breaks = seq(0, 60, 5), include.lowest = TRUE)
+
+# percentage delay for each group
+delay_percentage <- (100 * sum(plane_age_data$isDelay[plane_age_data$isDelay == 1] , na.rm = TRUE) / 
+                     length(plane_age_data$isDelay[plane_age_data$isDelay == 1]))
+
+delay_percentage <- aggregate(isDelay ~ age_group, data = plane_age_data, FUN = function(x) {
+  100 * sum(x == 1, na.rm = TRUE) / length(x)
+})
+
+
+barplot(delay_percentage$isDelay, names.arg = delay_percentage$age_group, 
+        xlab = "Plane Age Group", ylab = "Percentage of Delayed Flights")
+
+```
+

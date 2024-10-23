@@ -1,0 +1,57 @@
+
+Northwind Traders Database Relationships:
+
+1. Orders ↔ Customers:
+Relationship Type: Many-to-One
+Foreign Key: CustomerID in Orders references Customers.CustomerID
+Description: Each order is placed by a single customer, but each customer can place multiple orders.
+
+2. Orders ↔ Employees:
+Relationship Type: Many-to-One
+Foreign Key: EmployeeID in Orders references Employees.EmployeeID
+Description: Each order is handled by one employee (sales representative), but an employee can handle multiple orders.
+
+3. Orders ↔ Shippers:
+Relationship Type: Many-to-One
+Foreign Key: ShipVia in Orders references Shippers.ShipperID
+Description: Each order is shipped by one shipping company, but a shipping company can handle multiple orders.
+
+4. Order Details ↔ Orders:
+Relationship Type: Many-to-One
+Foreign Key: OrderID in Order Details references Orders.OrderID
+Description: Each order can include multiple products (order details), but each order detail record is associated with one order.
+
+5. Order Details ↔ Products:
+Relationship Type: Many-to-One
+Foreign Key: ProductID in Order Details references Products.ProductID
+Description: Each order detail references a specific product, but a product can appear in multiple order details.
+
+6. Products ↔ Suppliers:
+Relationship Type: Many-to-One
+Foreign Key: SupplierID in Products references Suppliers.SupplierID
+Description: Each product is supplied by one supplier, but a supplier can supply multiple products.
+
+7. Products ↔ Categories:
+Relationship Type: Many-to-One
+Foreign Key: CategoryID in Products references Categories.CategoryID
+Description: Each product belongs to one category, but a category can contain multiple products.
+
+8. Employees ↔ Employees (Self-Referencing):
+Relationship Type: Self-Referencing
+Foreign Key: ReportsTo in Employees references another EmployeeID
+Description: Each employee may report to another employee, creating a hierarchical structure.
+
+9. Employee Territories ↔ Employees:
+Relationship Type: Many-to-One
+Foreign Key: EmployeeID in EmployeeTerritories references Employees.EmployeeID
+Description: Each employee is associated with one or more territories, but each territory is managed by a single employee.
+
+10. Employee Territories ↔ Territories:
+Relationship Type: Many-to-One
+Foreign Key: TerritoryID in EmployeeTerritories references Territories.TerritoryID
+Description: Each employee territory is assigned to one territory, but each territory can have multiple employee assignments.
+
+11. Territories ↔ Region:
+Relationship Type: Many-to-One
+Foreign Key: RegionID in Territories references Region.RegionID
+Description: Each territory belongs to one region, but each region can have multiple territories.

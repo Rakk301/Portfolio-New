@@ -1,0 +1,210 @@
+---
+title: "Question 1r"
+output: html_document
+date: "2023-4-03"
+---
+
+
+Importing Libraries:
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+
+Reading data
+
+```{r}
+
+flight_06 <- read_csv("/Users/rak/Desktop/2006.csv")
+flight_07 <- read_csv("/Users/rak/Desktop/2007.csv")
+airports <- read_csv("/Users/rak/Desktop/airports.csv")
+carriers <- read_csv("/Users/rak/Desktop/carriers.csv")
+plane_data <- read_csv("/Users/rak/Desktop/plane-data.csv")
+```
+
+Data Cleaning:
+```{r}
+cat(dim(flight_06), dim(flight_07))
+```
+
+```{r}
+# Checking for null values
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+
+```{r}
+# Rows with cancelled and diverted flights are dropped:
+flight_06 <- flight_06 %>% filter(Cancelled == 0, Diverted == 0)
+flight_07 <- flight_07 %>% filter(Cancelled == 0, Diverted == 0)
+```
+
+```{r}
+# Checking null values again:
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+
+Merging dataset:
+
+```{r}
+# Merging the Dataframes
+flight_data <- bind_rows(flight_06, flight_07)
+```
+
+Dropping redundant columns
+
+```{r}
+# Removing redundant columns:
+flight_data <- select(flight_data, -CancellationCode, -TaxiIn, -TaxiOut)
+colSums(is.na(flight_data))
+```
+
+Calculating TotalDelay and isDelay:
+
+```{r}
+# Calculating the total delay - arrival + departure delay
+flight_data$TotalDelay <- flight_data$ArrDelay + flight_data$DepDelay
+flight_data$TotalDelay <- as.numeric(flight_data$TotalDelay)
+# 'isDelay' to determine if flight is delayed or not
+flight_data$isDelay <- ifelse(flight_data$TotalDelay > 0, 1, 0)
+flight_data$isDelay <- as.numeric(flight_data$isDelay)
+```
+
+
+# Question 1:
+
+Creating new classes for different times of day:
+```{r}
+# Create a new column DepHour by extracting the first digit of DepTime
+flight_data$DepHour <- ifelse(nchar(flight_data$DepTime) == 3, substr(flight_data$DepTime, 1, 1),
+                              substr(flight_data$DepTime, 1, 2))
+```
+
+```{r}
+colSums(is.na(flight_data))
+```
+
+```{r}
+# Convert Departure hour to numeric datatype:
+flight_data$DepHour <- as.numeric(flight_data$DepHour)
+```
+
+```{r}
+# Creating new columns for time of day, day of week and month
+flight_data$TimeOfDay <- cut(flight_data$DepHour, 
+                              breaks = c(0, 6, 12, 18, 24), 
+                              labels = c("Night", "Morning", "Afternoon", "Evening"))
+flight_data$DayOfWeek <- factor(flight_data$DayOfWeek,
+                                labels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+flight_data$Month <- factor(flight_data$Month, levels = 1:12, 
+                            labels = c("January", "February", "March", "April", 
+                                       "May", "June", "July", "August", 
+                                       "September", "October", "November", "December"))
+```
+
+
+```{r}
+
+# Grouping the data by time of day, day of week and month
+grouped_day <- flight_data %>% group_by(TimeOfDay)
+grouped_week <- flight_data %>% group_by(DayOfWeek)
+grouped_month <- flight_data %>% group_by(Month)
+
+# Calculating the number of flights in each time period
+time_flights <- count(grouped_day)
+day_flights <- count(grouped_week)
+month_flights <- count(grouped_month)
+time_flights <- time_flights[-nrow(time_flights), ]
+time_flights
+
+day_flights
+
+month_flights
+```
+
+```{r}
+# Calculating the total delay for each group
+time_delay <- grouped_day %>% summarise(TotalDelay = sum(DepDelay, na.rm = TRUE))
+day_delay <- grouped_week %>% summarise(TotalDelay = sum(DepDelay, na.rm = TRUE))
+month_delay <- grouped_month %>% summarise(TotalDelay = sum(DepDelay, na.rm = TRUE))
+time_delay <- time_delay[-nrow(time_delay), ]
+time_delay
+day_delay
+month_delay
+```
+
+```{r}
+# Calculating the total average delay across each time period
+# Mean delay for Time of Day:
+grouped_day %>% summarize(mean_delay = mean(TotalDelay)) %>% print()
+
+# Mean delay for Day of Week:
+grouped_week %>% summarize(mean_delay = mean(TotalDelay)) %>% print()
+
+# Mean Delay for Month of Year:
+grouped_month %>% summarize(mean_delay = mean(TotalDelay)) %>% print()
+
+# Group by time of day and calculate mean delay
+grouped_time <- flight_data %>% group_by(TimeOfDay) %>% summarize(mean_delay = mean(TotalDelay))
+grouped_time<- head(grouped_time, 4)
+```
+
+# Graph of average Delay Times for each time of the day:
+```{r}
+# Plotting the average delay by time of day
+ggplot(grouped_time, aes(x=TimeOfDay, y=mean_delay, fill=TimeOfDay)) + 
+  geom_bar(stat="identity", color="black") + 
+  geom_text(aes(label=round(mean_delay, 2)), vjust=-0.5, size=5, color="black", fontface="bold") +
+  theme_bw() + 
+  theme(legend.position = "none") +
+  labs(title = "Average delay by time of day", x = "Time of day", y = "Average delay (minutes)") + 
+  scale_fill_manual(values = c("#1F77B4", "#FF7F0E", "#2CA02C", "#D62728")) +
+  coord_cartesian(ylim = c(0, max(grouped_time$mean_delay)+10)) +
+  geom_hline(yintercept = 0, linetype="dotted", color = "gray")
+```
+
+# Graph of average Delay Times for each day of the week:
+```{r}
+# group by day of week and calculate mean delay
+grouped_day <- aggregate(TotalDelay ~ DayOfWeek, flight_data, mean)
+# round the mean delay to two decimal places
+grouped_day$TotalDelay <- round(grouped_day$TotalDelay, 2)
+
+# create a bar plot of mean delay by day of week
+library(ggplot2)
+ggplot(grouped_day, aes(x=DayOfWeek, y=TotalDelay)) +
+  geom_bar(stat="identity", fill="#ff7f0e") +
+  geom_text(aes(label=TotalDelay), vjust=1.5, color="black", fontface="bold", size=8) +
+  labs(title="Average delay by Day of Week", x="Day of Week", y="Average delay (minutes)") +
+  theme(plot.title = element_text(size=14, face="bold"),
+        axis.title = element_text(size=14, face="bold"),
+        axis.text = element_text(size=12, face="bold"),
+        axis.text.x = element_text(angle=45, hjust=1)) +
+  scale_x_discrete(labels=c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+```
+
+# Graph of average Delay Times for each Month of the year:
+```{r}
+library(ggplot2)
+
+# group by month of the year and calculate mean delay
+grouped_month <- aggregate(flight_data$TotalDelay, list(flight_data$Month), mean)
+colnames(grouped_month) <- c("Month", "TotalDelay")
+
+# Adding labels to the bars:
+label_months <- c('January', 'February', 'March', 'April', 'May', 'June','July', 'August', 'September', 'October', 'November', 'December')
+ggplot(grouped_month, aes(x = Month, y = TotalDelay, fill = TotalDelay)) + 
+  geom_bar(stat = "identity", position = "dodge", fill="#ff7f0e") +
+  #scale_fill_gradient(low = "#00CCFF", high = "#FF6633") +
+  geom_text(aes(label = round(TotalDelay,2)), vjust = -0.5, size = 5, fontface = "bold") +
+  scale_x_discrete(labels = label_months) +
+  ggtitle("Average delay by Month") +
+  xlab("Month") + ylab("Average delay (minutes)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+```
+
+

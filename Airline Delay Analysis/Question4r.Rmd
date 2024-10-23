@@ -1,0 +1,172 @@
+---
+title: "Question_4r"
+output: html_document
+---
+
+
+Importing Libraries:
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+
+reading data
+
+```{r}
+
+flight_06 <- read_csv("/Users/rak/Desktop/2006.csv")
+flight_07 <- read_csv("/Users/rak/Desktop/2007.csv")
+airports <- read_csv("/Users/rak/Desktop/airports.csv")
+carriers <- read_csv("/Users/rak/Desktop/carriers.csv")
+plane_data <- read_csv("/Users/rak/Desktop/plane-data.csv")
+```
+
+# Data Cleaning:
+```{r}
+cat(dim(flight_06), dim(flight_07))
+```
+```{r}
+# Checking for null values
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+```{r}
+# Rows with cancelled and diverted flights are dropped:
+flight_06 <- flight_06 %>% filter(Cancelled == 0, Diverted == 0)
+flight_07 <- flight_07 %>% filter(Cancelled == 0, Diverted == 0)
+```
+```{r}
+# Checking null values again:
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+
+Merging dataset
+```{r}
+# Merging the Dataframes
+flight_data <- bind_rows(flight_06, flight_07)
+```
+
+Dropping redundant columns
+```{r}
+# Removing redundant columns:
+flight_data <- select(flight_data, -CancellationCode, -TaxiIn, -TaxiOut)
+colSums(is.na(flight_data))
+```
+
+Calculating TotalDelay and isDelay:
+```{r}
+# Calculating the total delay - arrival + departure delay
+flight_data$TotalDelay <- flight_data$ArrDelay + flight_data$DepDelay
+flight_data$TotalDelay <- as.numeric(flight_data$TotalDelay)
+# 'isDelay' to determine if flight is delayed or not
+flight_data$isDelay <- ifelse(flight_data$TotalDelay > 0, 1, 0)
+flight_data$isDelay <- as.numeric(flight_data$isDelay)
+```
+
+# Question 4
+```{r}
+# Printing top ten flight by 'TailNum'
+flights <- flight_data %>%
+  count(TailNum, sort = TRUE)
+
+print(flights)
+```
+
+```{r}
+# Creating 'Date' to store day week and month of flight
+flight_data$Date <- as.Date(paste(flight_data$Year, flight_data$Month, flight_data$DayofMonth, sep = "-"), format = "%Y-%m-%d")
+```
+
+```{r}
+# Check for null values : 
+colSums(is.na(flight_data))
+```
+```{r}
+# Creating 'DateTime' to store depTime with date:
+flight_data$DateTime <- paste(flight_data$Date, sprintf("%04d", flight_data$DepTime), sep = " ")
+```
+```{r}
+#Check for null values:
+colSums(is.na(flight_data))
+```
+```{r}
+top_flights <- c("N308SW", "N478HA", "N484HA", "N479HA", "N480HA", "N487HA", "N475HA", "N486HA", "N481HA", "N477HA")
+# Creating a new dataframe 'cascade' which only contains flights of specific Tail Number and then sorting it by 
+# the newly created 'DateTime' column
+#cascade <- filter(flight_data, TailNum == 'N308SW')  %>%
+ # arrange(DateTime) 
+
+
+```
+
+Selecting only relevant columns:
+```{r}
+#cascade <- select(cascade, TailNum, ArrDelay, DepDelay, LateAircraftDelay, isDelay, DateTime, DepTime, Origin, Dest)
+#cascasde
+```
+
+# Calculating cascading delays:
+```{r}
+# Create lists to store information about cascading delays:
+TailNum <- c()
+Flights <- c()
+Delayed <- c()
+Delayed_p <- c()
+Cascade_p <- c()
+Cascade_dp <- c()
+
+for (i in top_flights){
+    # Creating a new dataframe 'cascade' which only contains flights of specific Tail Number and then sorting it by 
+    # the newly created 'DateTime' column
+    cascade <- flight_data[flight_data$TailNum == i,]
+    cascade <- cascade[order(cascade$DateTime),]
+    
+    # Creating nextarr and nextlateaircraft to store new flight lateaircraftdelay and arrival dela:
+    cascade$next_arr <- c(cascade$ArrDelay[-1], NA)
+
+   
+    cascade$next_lateaircraft <- c(cascade$LateAircraftDelay[-1], NA)
+    # cascading delay is classified when all the conditions are met
+    cascade$CascadingDelay <- ((cascade$DepDelay > 0) 
+                            & (cascade$next_arr > 0) 
+                            & (cascade$next_lateaircraft > 0))
+
+    # Making the datatype of CascadingDelay int:
+    cascade$CascadingDelay <- as.integer(cascade$CascadingDelay)
+    
+    #Storing data as lists:
+    delayed_sum <- sum(cascade$isDelay, na.rm = TRUE)
+    Delayed <- c(Delayed, delayed_sum)
+      
+    Delayed_per <- mean(cascade$isDelay,na.rm = TRUE)*100
+    Delayed_p <- c(Delayed_p, Delayed_per)
+    
+    Cascade_per <- mean(cascade$CascadingDelay, na.rm = TRUE)*100
+    Cascade_p <- c(Cascade_p, Cascade_per)
+   
+    Cascade_dper <- sum(cascade$CascadingDelay, na.rm = TRUE)/delayed_sum *100
+    Cascade_dp <- c(Cascade_dp,Cascade_dper)
+
+   
+    TailNum <- c(TailNum, i)
+    Flights <- c(Flights, nrow(cascade))
+
+    
+}
+
+data <- data.frame(TailNum = TailNum, Flights = Flights, Delayed = Delayed, 
+                    Delayed_percentage = Delayed_p,  Cascade_percent = Cascade_p, Cascadde_percentof_delayed = Cascade_dp)
+cascade_results <- data
+
+cascade_results
+
+```
+
+Calculating the mean cascading flights that were delayed:
+```{r}
+print(mean(cascade_results$Cascadde_percentof_delayed))
+```
+

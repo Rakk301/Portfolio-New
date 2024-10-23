@@ -1,0 +1,322 @@
+---
+title: "Question3r"
+output: html_document
+---
+
+Importing Libraries:
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(tidyr)
+#install.packages("gridExtra")
+#library(gridExtra)
+```
+
+
+reading data
+
+```{r}
+
+flight_06 <- read_csv("/Users/rak/Desktop/2006.csv")
+flight_07 <- read_csv("/Users/rak/Desktop/2007.csv")
+airports <- read_csv("/Users/rak/Desktop/airports.csv")
+carriers <- read_csv("/Users/rak/Desktop/carriers.csv")
+plane_data <- read_csv("/Users/rak/Desktop/plane-data.csv")
+```
+
+# Data Cleaning:
+```{r}
+cat(dim(flight_06), dim(flight_07))
+```
+```{r}
+# Checking for null values
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+```{r}
+# Rows with cancelled and diverted flights are dropped:
+flight_06 <- flight_06 %>% filter(Cancelled == 0, Diverted == 0)
+flight_07 <- flight_07 %>% filter(Cancelled == 0, Diverted == 0)
+```
+```{r}
+# Checking null values again:
+colSums(is.na(flight_06))
+colSums(is.na(flight_07))
+```
+
+Merging dataset
+```{r}
+# Merging the Dataframes
+flight_data <- bind_rows(flight_06, flight_07)
+```
+
+Dropping redundant columns
+```{r}
+# Removing redundant columns:
+flight_data <- select(flight_data, -CancellationCode, -TaxiIn, -TaxiOut)
+colSums(is.na(flight_data))
+```
+
+Calculating TotalDelay and isDelay:
+```{r}
+# Calculating the total delay - arrival + departure delay
+flight_data$TotalDelay <- flight_data$ArrDelay + flight_data$DepDelay
+flight_data$TotalDelay <- as.numeric(flight_data$TotalDelay)
+# 'isDelay' to determine if flight is delayed or not
+flight_data$isDelay <- ifelse(flight_data$TotalDelay > 0, 1, 0)
+flight_data$isDelay <- as.numeric(flight_data$isDelay)
+```
+
+# Question 3:
+
+Finding the top destinations:
+```{r}
+top_destinations <- flight_data %>%
+  count(Dest) %>%
+  arrange(desc(n)) %>%
+  top_n(4) %>%
+  select(Dest)
+
+print(top_destinations)
+```
+
+```{r}
+# Creating 6 unique pairs of Flight trips amongst the top Four destinations:
+pairs <- list(c("ATL","ORD"), c('ATL','DFW'), c('ATL','LAX'), c('ORD','DFW'), c('LAX','ORD'), c('LAX','DFW'))
+
+pair_dict <- list()
+```
+
+Creating a new dictionary to store the flight data for all the pairs:
+```{r}
+# Adding flight data of each of the pairs to the dictionary:
+for (i in 1:6) {
+  origin <- pairs[[i]][1]    # Selecting origin
+  destination <- pairs[[i]][2]    # Selecting destination
+
+  # Combining both origin to destination and destination to origin as one pair
+  PAIR1 <- flight_data %>%
+    filter(Dest == origin, Origin == destination)
+  PAIR2 <- flight_data %>%
+    filter(Dest == destination, Origin == origin)
+  PAIR <- bind_rows(PAIR1, PAIR2)
+  pair_dict[[i]] <- PAIR
+}
+```
+
+```{r}
+# Changing the key number to the names of the pairs:
+pair_dict[['ATL-ORD']] <- pair_dict[[1]]
+pair_dict[['ATL-DFW']] <- pair_dict[[2]]
+pair_dict[['ATL-LAX']] <- pair_dict[[3]]
+pair_dict[['ORD-DFW']] <- pair_dict[[4]]
+pair_dict[['LAX-ORD']] <- pair_dict[[5]]
+pair_dict[['LAX-DFW']] <- pair_dict[[6]]
+
+
+for (key in names(pair_dict)) {
+  if (!is.null(pair_dict[[key]])) {
+    pair_dict[[key]] <- pair_dict[[key]] %>%
+      select(Year, Origin, Dest, Month)
+  }
+}
+```
+
+Grouping the data by month to find monthly data for each pair:
+```{r}
+#Creating new list to store the number of flight in each month for all the pairs
+month_group <- list(
+ATL_ORD = NULL,
+ATL_DFW = NULL,
+ATL_LAX = NULL,
+ORD_DFW = NULL,
+LAX_ORD = NULL,
+LAX_DFW = NULL
+)
+```
+
+```{r}
+#Grouping by 'Month' to find the number of flights:
+for (key in names(pair_dict)) {
+month_group[[key]] <- table(pair_dict[[key]]$Month)
+} 
+```
+
+Changing the dictionary of monthly flights to individual dataframes to allow the data to be graphed:
+
+```{r}
+df_ATL_ORD <- month_group[['ATL-ORD']]
+df_ATL_DFW <- month_group[['ATL-DFW']]
+df_ATL_LAX <- month_group[['ATL-LAX']]
+df_ORD_DFW <- month_group[['ORD-DFW']]
+df_LAX_ORD <- month_group[['LAX-ORD']]
+df_LAX_DFW <- month_group[['LAX-DFW']]
+
+# Convert tables to data frames
+df_ATL_ORD <- as.data.frame(month_group[['ATL-ORD']])
+df_ATL_DFW <- as.data.frame(month_group[['ATL-DFW']])
+df_ATL_LAX <- as.data.frame(month_group[['ATL-LAX']])
+df_ORD_DFW <- as.data.frame(month_group[['ORD-DFW']])
+df_LAX_ORD <- as.data.frame(month_group[['LAX-ORD']])
+df_LAX_DFW <- as.data.frame(month_group[['LAX-DFW']])
+
+# Changing the column names to months and fligths:
+colnames(df_ATL_ORD) <- c("Month", "Flights")
+colnames(df_ATL_DFW) <- c("Month", "Flights")
+colnames(df_ATL_LAX) <- c("Month", "Flights")
+colnames(df_ORD_DFW) <- c("Month", "Flights")
+colnames(df_LAX_ORD) <- c("Month", "Flights")
+colnames(df_LAX_DFW) <- c("Month", "Flights")
+
+df_ATL_ORD 
+df_ATL_DFW 
+df_ATL_LAX 
+df_ORD_DFW 
+df_LAX_ORD 
+df_LAX_DFW 
+```
+
+Grouping the data by year to find yearly data for each pair:
+```{r}
+#Creating new list to store the number of flight in each year for all the pairs
+year_group <- list(
+ATL_ORD = NULL,
+ATL_DFW = NULL,
+ATL_LAX = NULL,
+ORD_DFW = NULL,
+LAX_ORD = NULL,
+LAX_DFW = NULL
+)
+for (key in names(pair_dict)) {
+year_group[[key]] <- table(pair_dict[[key]]$Year)
+}
+```
+
+Changing the dictionary of yearly flights to individual dataframes to allow the data to be graphed:
+```{r}
+df_ATL_ORD_y <- year_group[['ATL-ORD']]
+df_ATL_DFW_y <- year_group[['ATL-DFW']]
+df_ATL_LAX_y <- year_group[['ATL-LAX']]
+df_ORD_DFW_y <- year_group[['ORD-DFW']]
+df_LAX_ORD_y <- year_group[['LAX-ORD']]
+df_LAX_DFW_y <- year_group[['LAX-DFW']]
+
+# Convert tables to data frames
+df_ATL_ORD_y <- as.data.frame(year_group[['ATL-ORD']])
+df_ATL_DFW_y <- as.data.frame(year_group[['ATL-DFW']])
+df_ATL_LAX_y <- as.data.frame(year_group[['ATL-LAX']])
+df_ORD_DFW_y <- as.data.frame(year_group[['ORD-DFW']])
+df_LAX_ORD_y <- as.data.frame(year_group[['LAX-ORD']])
+df_LAX_DFW_y <- as.data.frame(year_group[['LAX-DFW']])
+
+# Changing the column names to months and fligths:
+colnames(df_ATL_ORD_y) <- c("Year", "Flights")
+colnames(df_ATL_DFW_y) <- c("Year", "Flights")
+colnames(df_ATL_LAX_y) <- c("Year", "Flights")
+colnames(df_ORD_DFW_y) <- c("Year", "Flights")
+colnames(df_LAX_ORD_y) <- c("Year", "Flights")
+colnames(df_LAX_DFW_y) <- c("Year", "Flights")
+
+df_ATL_ORD_y 
+df_ATL_DFW_y
+df_ATL_LAX_y 
+df_ORD_DFW_y 
+df_LAX_ORD_y 
+df_LAX_DFW_y 
+```
+
+# Plotting monthly flights for each individual pair:
+```{r}
+plot(df_ATL_ORD$Flights, type = 'l', xaxt = 'n', xlab = "Months", ylab = "Monthly Flights", main="Monthly flights between ATL and ORD") 
+axis(1, at = 1:12)  
+plot(df_ATL_DFW$Flights, type = 'l', xaxt = 'n', xlab = "Months", ylab = "Monthly Flights", main="Monthly flights between ATL and DFW")  
+axis(1, at = 1:12)  
+plot(df_ATL_LAX$Flights, type = 'l', xaxt = 'n', xlab = "Months", ylab = "Monthly Flights", main="Monthly flights between ATL and LAX")  
+axis(1, at = 1:12)  
+plot(df_ORD_DFW$Flights, type = 'l', xaxt = 'n', xlab = "Months", ylab = "Monthly Flights", main="Monthly flights between ORD and DFW")  
+axis(1, at = 1:12)  
+plot(df_LAX_ORD$Flights, type = 'l', xaxt = 'n', xlab = "Months", ylab = "Monthly Flights", main="Monthly flights between LAX and ORD")  
+axis(1, at = 1:12)  
+plot(df_LAX_DFW$Flights, type = 'l', xaxt = 'n', xlab = "Months", ylab = "Monthly Flights", main="Monthly flights between LAX and DFW") 
+axis(1, at = 1:12) 
+```
+
+# Plotting monthly flights of all pairs:
+```{r}
+# Create empty plot
+plot(0, type='n', xlim=c(1,12), ylim=c(0, 4000),
+     xlab='Months', ylab='Monthly Flights',
+     main='Monthly Flights for all pairs:')
+
+# Add lines for each pair
+lines(df_ATL_ORD$Flights, col='red')
+lines(df_ATL_DFW$Flights, col='green')
+lines(df_ATL_LAX$Flights, col='blue')
+lines(df_ORD_DFW$Flights, col='orange')
+lines(df_LAX_ORD$Flights, col='purple')
+lines(df_LAX_DFW$Flights, col='brown')
+
+# Add legend
+legend('topright', legend=c('ATL-ORD', 'ATL-DFW', 'ATL-LAX', 'ORD-DFW', 'LAX-ORD', 'LAX-DFW'), 
+       col=c('red', 'green', 'blue', 'orange', 'purple', 'brown'), lty=1, cex=0.8)
+```
+
+# Plotting percentage change in monthly flights for all pairs:
+
+```{r}
+# Calculating percentage change in month;y flights for each pair:
+df_ATL_ORD_pc <- diff(df_ATL_ORD$Flights)/lag(df_ATL_ORD$Flights) * 100
+df_ATL_DFW_pc <- diff(df_ATL_DFW$Flights)/lag(df_ATL_DFW$Flights) * 100
+df_ATL_LAX_pc <- diff(df_ATL_LAX$Flights)/lag(df_ATL_LAX$Flights) * 100
+df_ORD_DFW_pc <- diff(df_ORD_DFW$Flights)/lag(df_ORD_DFW$Flights) * 100
+df_LAX_ORD_pc <- diff(df_LAX_ORD$Flights)/lag(df_LAX_ORD$Flights) * 100
+df_LAX_DFW_pc <- diff(df_LAX_DFW$Flights)/lag(df_LAX_DFW$Flights) * 100
+```
+
+```{r}
+plot(0, type = 'n', xlim = c(2, 12), ylim = c(-50, 50),
+     xlab = 'Months', ylab = 'Percentage Change in Monthly Flights',
+     main = 'Percentage Change in Monthly Flights for all pairs')
+
+# Add lines for each pair
+lines(df_ATL_ORD_pc, col = 'red')
+lines(df_ATL_DFW_pc, col = 'green')
+lines(df_ATL_LAX_pc, col = 'blue')
+lines(df_ORD_DFW_pc, col = 'orange')
+lines(df_LAX_ORD_pc, col = 'purple')
+lines(df_LAX_DFW_pc, col = 'brown')
+
+# Add x-axis labels
+axis(1, at = 1:12, labels = month.abb)
+
+# Add legend
+legend('topright', legend = c('ATL-ORD', 'ATL-DFW', 'ATL-LAX', 'ORD-DFW', 'LAX-ORD', 'LAX-DFW'), 
+       col = c('red', 'green', 'blue', 'orange', 'purple', 'brown'), lty = 1, cex = 0.8)
+```
+
+# Plotting yearly flights for each of the pairs:
+```{r}
+df_year <- data.frame(
+  Pair = rep(c("ATL-ORD", "ATL-DFW", "ATL-LAX", "ORD-DFW", "LAX-ORD", "LAX-DFW"), each = 2),
+  Year = rep(c(2006, 2007), times = 6),
+  Flights = c(df_ATL_ORD_y$Flights, df_ATL_DFW_y$Flights, df_ATL_LAX_y$Flights, 
+              df_ORD_DFW_y$Flights, df_LAX_ORD_y$Flights, df_LAX_DFW_y$Flights)
+)
+
+# Creating a grouped bar chart
+ggplot(df_year, aes(x = Pair, y = Flights, fill = factor(Year))) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  scale_fill_manual(values = c("#ff7f0e", "#2ca02c")) +
+  labs(title = "Number of flights across different years", x = "Pairs", y = "Number of flights") +
+  theme_minimal()
+```
+
+
+
+
+
+
+
+
